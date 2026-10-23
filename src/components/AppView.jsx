@@ -110,8 +110,12 @@ export default function AppView({
       {/* SIDEBAR */}
       <aside className={`eduplex-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
         <div className="sidebar-logo">
-          <div className="logo-icon-box"><span className="logo-symbol">D</span></div>
-          <span className="logo-text">DocTrans</span>
+          {/* Using the exact SVG inline for the dashboard */}
+          <svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" rx="24" fill="#D4FF32"/>
+            <path d="M30 25 H55 C70 25 80 35 80 50 C80 65 70 75 55 75 H30 V25 Z M45 40 V60 H55 C61 60 65 56 65 50 C65 44 61 40 55 40 H45 Z" fill="#1a1a1e"/>
+          </svg>
+          <span className="logo-text" style={{ marginLeft: '10px' }}>DocTrans</span>
           <button className="mobile-close-btn" onClick={() => setIsSidebarOpen(false)}>
             <X size={20} color="#ffffff" />
           </button>
