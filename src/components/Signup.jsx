@@ -19,8 +19,9 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
         
         <div className="auth-left">
           <div className="auth-header">
-            <div className="logo" onClick={goBack} style={{ cursor: 'pointer' }}>
-              <span className="logo-icon">●</span> doctrans
+            <div className="brand-logo" onClick={goBack} style={{ marginBottom: '2rem' }}>
+              <div className="brand-icon">D</div>
+              <span className="brand-name">DocTrans</span>
             </div>
             <h2>Create an Account</h2>
             <p>Start your journey with doctrans today.</p>

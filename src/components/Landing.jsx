@@ -2,7 +2,7 @@ import React from "react";
 import { 
   ArrowRight, ShieldCheck, Zap, Layout, Lock, CheckCircle2, 
   Globe, Users, Sparkles, ChevronDown, FileText, Upload, 
-  Download, Play, Clock, Layers, Eye, Database
+  Download, Play, Clock, Layers, Eye, Database , X
 } from "lucide-react";
 import "../doctrans.css"; // Ensure the path to your CSS is correct
 
@@ -14,12 +14,10 @@ export default function Landing({ goApp, goPricingCheckout, goLogin, goSignup })
           STICKY NAVBAR
       ========================================= */}
       <nav className="landing-navbar">
-        <div className="landing-logo">
-          <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100" height="100" rx="24" fill="#4D6FE6"/>
-            <path d="M30 25 H55 C70 25 80 35 80 50 C80 65 70 75 55 75 H30 V25 Z M45 40 V60 H55 C61 60 65 56 65 50 C65 44 61 40 55 40 H45 Z" fill="#ffffff"/>
-          </svg>
-          <span>DocTrans</span>
+        {/* Replace your old logo with this */}
+        <div className="brand-logo" onClick={goApp}>
+          <div className="brand-icon">D</div>
+          <span className="brand-name">DocTrans</span>
         </div>
         <div className="landing-nav-links">
           <a href="#features">Features</a>

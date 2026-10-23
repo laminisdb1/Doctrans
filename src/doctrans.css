@@ -2713,3 +2713,35 @@ body, html, #root {
   }
 }
 
+/* =========================================
+   GLOBAL BRAND LOGO
+   ========================================= */
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+  background-color: #D4FF32; /* Your exact lime green */
+  color: #1a1a1e;            /* Dark 'D' */
+  border-radius: 10px;       /* Rounded square */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.3rem;
+  box-shadow: 0 4px 10px rgba(212, 255, 50, 0.25);
+}
+
+.brand-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0f172a; /* Black text for light backgrounds */
+  letter-spacing: -0.5px;
+}
+
