@@ -19,10 +19,12 @@ export default function AppView({
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   
-  // API State
+  // API & Usage State
   const [translating, setTranslating] = useState(false);
   const [translatedDoc, setTranslatedDoc] = useState(null); 
   const [documents, setDocuments] = useState([]); 
+  const [translationsUsed, setTranslationsUsed] = useState(0);
+  const MAX_FREE_TRANSLATIONS = 2;
 
   // Settings State
   const [defaultLang, setDefaultLang] = useState("French (FR)");
@@ -32,14 +34,28 @@ export default function AppView({
   const fileInputRef = useRef(null);
   const displayName = email ? email.split("@")[0] : "User";
 
-  // Fetch documents for "My Documents" tab
+  // Fetch Account Usage & Documents
   useEffect(() => {
-    if (activeTab === "documents" && email) {
+    if (email) {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-      fetch(`${backendUrl}/api/documents?email=${encodeURIComponent(email)}`)
+      
+      // Fetch Account Status (Usage)
+      fetch(`${backendUrl}/api/account?email=${encodeURIComponent(email)}`)
         .then(res => res.json())
-        .then(data => setDocuments(data))
+        .then(data => {
+          if (data.subscription) {
+            setTranslationsUsed(data.subscription.translationsUsed || 0);
+          }
+        })
         .catch(err => console.error(err));
+
+      // Fetch Documents
+      if (activeTab === "documents") {
+        fetch(`${backendUrl}/api/documents?email=${encodeURIComponent(email)}`)
+          .then(res => res.json())
+          .then(data => setDocuments(data))
+          .catch(err => console.error(err));
+      }
     }
   }, [activeTab, email]);
 
@@ -63,7 +79,7 @@ export default function AppView({
     setTargetLang(sourceLang);
   };
 
-    const handleTranslate = async () => {
+  const handleTranslate = async () => {
     if (!selectedFile) return;
     setTranslating(true);
     setTranslatedDoc(null);
@@ -76,7 +92,6 @@ export default function AppView({
     formData.append("preserveLayout", preserveLayout);
 
     try {
-      // Make sure this URL is exactly http://localhost:4000
       const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
       
       const response = await fetch(`${backendUrl}/api/translate`, {
@@ -84,21 +99,30 @@ export default function AppView({
         body: formData,
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!response.ok || !contentType || !contentType.includes("application/json")) {
-        throw new Error("Server error. Please ensure the backend is running on port 4000.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        // IF LIMIT REACHED, OPEN CHECKOUT MODAL
+        if (data.error === "FREE_LIMIT_REACHED") {
+          onOpenCheckout("Pro", 29);
+          return; 
+        }
+        throw new Error(data.error || "Translation failed.");
       }
 
-      const data = await response.json();
       setTranslatedDoc(data.document);
+      if (data.translationsUsed !== undefined) {
+        setTranslationsUsed(data.translationsUsed);
+      }
       
     } catch (error) {
       console.error(error);
-      alert(error.message);
+      alert(`Error: ${error.message}`);
     } finally {
       setTranslating(false);
     }
   };
+
   const resetTranslation = () => {
     setSelectedFile(null);
     setTranslatedDoc(null);
@@ -106,16 +130,11 @@ export default function AppView({
 
   return (
     <div className="eduplex-layout">
-      
       {/* SIDEBAR */}
       <aside className={`eduplex-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
         <div className="sidebar-logo">
-          {/* Using the exact SVG inline for the dashboard */}
-          <svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100" height="100" rx="24" fill="#D4FF32"/>
-            <path d="M30 25 H55 C70 25 80 35 80 50 C80 65 70 75 55 75 H30 V25 Z M45 40 V60 H55 C61 60 65 56 65 50 C65 44 61 40 55 40 H45 Z" fill="#1a1a1e"/>
-          </svg>
-          <span className="logo-text" style={{ marginLeft: '10px' }}>DocTrans</span>
+          <div className="logo-icon-box"><span className="logo-symbol">D</span></div>
+          <span className="logo-text">DocTrans</span>
           <button className="mobile-close-btn" onClick={() => setIsSidebarOpen(false)}>
             <X size={20} color="#ffffff" />
           </button>
@@ -194,7 +213,7 @@ export default function AppView({
                   </div>
                   <div className="action-card">
                     <div className="action-icon bg-green"><FileText size={20} /></div>
-                    <div className="action-info"><h4>Recent Files</h4><p>3 translated</p></div>
+                    <div className="action-info"><h4>Recent Files</h4><p>{translationsUsed} translated</p></div>
                   </div>
                   <div className="action-card">
                     <div className="action-icon bg-orange"><Globe size={20} /></div>
@@ -224,7 +243,11 @@ export default function AppView({
                     <div className="plan-badge-icon">D</div>
                     <div><h4>DocTrans {plan ? plan.name : "Free"}</h4><p>Current Plan</p></div>
                   </div>
-                  <p className="plan-desc">You have {plan ? "unlimited" : "5"} pages remaining this month.</p>
+                  <p className="plan-desc">
+                    {plan && plan.name !== "Free" 
+                      ? "Unlimited translations remaining." 
+                      : `You have ${Math.max(0, MAX_FREE_TRANSLATIONS - translationsUsed)} of ${MAX_FREE_TRANSLATIONS} free translations left.`}
+                  </p>
                   <button className="btn-lime" onClick={() => onOpenCheckout("Pro", 29)}>Upgrade Plan <ArrowUpRight size={16} /></button>
                 </div>
                 <div className="side-card">
@@ -240,11 +263,26 @@ export default function AppView({
             </>
           )}
 
-          {/* NEW TRANSLATION VIEW */}
+          {/* NEW TRANSLATION VIEW (WITH PAYWALL) */}
           {activeTab === "new" && (
             <div className="translation-workspace">
               <div className="translation-card">
-                {translatedDoc ? (
+                
+                {/* PAYWALL: If limit reached, replace form with Upgrade UI */}
+                {(!plan || plan.name === "Free") && translationsUsed >= MAX_FREE_TRANSLATIONS ? (
+                  <div className="translation-success-state">
+                    <div className="success-icon-wrapper" style={{ background: '#fee2e2' }}>
+                      <Award size={40} style={{ color: '#ef4444' }} />
+                    </div>
+                    <h3>Free Limit Reached</h3>
+                    <p>You have used your {MAX_FREE_TRANSLATIONS} free translations.</p>
+                    <p>Upgrade to Pro to unlock unlimited translations and preserve your layout.</p>
+                    <button className="btn-primary w-full mt-4" onClick={() => onOpenCheckout("Pro", 29)}>
+                      Upgrade to Pro Now
+                    </button>
+                  </div>
+                ) : translatedDoc ? (
+                  // SUCCESS STATE
                   <div className="translation-success-state">
                     <div className="success-icon-wrapper"><Check size={40} className="success-icon" /></div>
                     <h3>Translation Complete!</h3>
@@ -255,6 +293,7 @@ export default function AppView({
                     <button className="btn-outline-sm mt-4" onClick={resetTranslation}>Translate another document</button>
                   </div>
                 ) : (
+                  // UPLOAD FORM
                   <>
                     <div 
                       className={`beautiful-dropzone ${isDragging ? "dragging" : ""} ${selectedFile ? "has-file" : ""}`}
@@ -359,8 +398,13 @@ export default function AppView({
                     <CreditCard className="plan-icon-large" />
                   </div>
                   <div className="usage-section">
-                    <div className="usage-text"><span>Pages used this month</span><strong>{plan ? "Unlimited" : "0 / 5"}</strong></div>
-                    <div className="usage-bar-bg"><div className="usage-bar-fill" style={{ width: plan ? "10%" : "0%" }}></div></div>
+                    <div className="usage-text">
+                      <span>Translations used this month</span>
+                      <strong>{plan && plan.name !== "Free" ? "Unlimited" : `${translationsUsed} / ${MAX_FREE_TRANSLATIONS}`}</strong>
+                    </div>
+                    <div className="usage-bar-bg">
+                      <div className="usage-bar-fill" style={{ width: plan && plan.name !== "Free" ? "100%" : `${(translationsUsed / MAX_FREE_TRANSLATIONS) * 100}%` }}></div>
+                    </div>
                   </div>
                   <div className="billing-info-row">
                     <div className="info-item"><span className="info-label">Next Billing Date</span><span className="info-value">{plan ? "Nov 22, 2026" : "N/A"}</span></div>
@@ -383,7 +427,7 @@ export default function AppView({
                   <div className="upgrade-card">
                     <div className="card-top"><h4>Ponctuel</h4><p className="upgrade-desc">For occasional users.</p><div className="upgrade-price">0€<span>/mo</span></div></div>
                     <ul className="upgrade-features">
-                      <li><Check size={18} className="check-icon" /> 5 pages per month</li>
+                      <li><Check size={18} className="check-icon" /> 2 translations per month</li>
                       <li><Check size={18} className="check-icon" /> Standard translation</li>
                     </ul>
                     <button className="btn-outline w-full" disabled>Current Plan</button>
