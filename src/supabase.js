@@ -1,6 +1,6 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-react'
+import { createClient } from '@supabase/supabase-js'
 
-export const supabase = createClientComponentClient({
-  supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-  supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-})
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
