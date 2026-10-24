@@ -92,7 +92,7 @@ export default function AppView({
     formData.append("preserveLayout", preserveLayout);
 
     try {
-      const backendUrl = "https://doctrans-backend.onrender.com";
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://doctrans-backend.onrender.com";
       
       const response = await fetch(`${backendUrl}/api/translate`, {
         method: "POST",
