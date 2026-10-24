@@ -14,7 +14,7 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
     // Mock success:
     setTimeout(() => {
       setLoading(false);
-      onLoginSuccess();
+      onLoginSuccess(email);
     }, 800);
   };
 

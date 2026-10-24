@@ -97,16 +97,22 @@ export default function DocTrans() {
           goSignup={() => setScreen("signup")} 
         />
       )}
-      {screen === "login" && (
+            {screen === "login" && (
         <Login 
-          onLoginSuccess={() => setScreen("app")} 
+          onLoginSuccess={(userEmail) => {
+            setEmail(userEmail); // Save the email!
+            setScreen("app");
+          }} 
           goSignup={() => setScreen("signup")} 
           goBack={() => setScreen("landing")}
         />
       )}
       {screen === "signup" && (
         <Signup 
-          onSignupSuccess={() => setScreen("app")} 
+          onSignupSuccess={(userEmail) => {
+            setEmail(userEmail); // Save the email!
+            setScreen("app");
+          }} 
           goLogin={() => setScreen("login")} 
           goBack={() => setScreen("landing")}
         />

@@ -10,7 +10,7 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
 
   const handleSignup = (e) => {
     e.preventDefault();
-    onSignupSuccess();
+    onSignupSuccess(email);
   };
 
   return (
