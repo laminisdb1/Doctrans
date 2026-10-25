@@ -739,6 +739,9 @@ body {
 /* =========================================
    AUTH PAGES (LOGIN & SIGNUP) - FIXED CENTER
    ========================================= */
+/* =========================================
+   AUTH PAGES (LOGIN & SIGNUP) - FULLY RESPONSIVE
+   ========================================= */
 .auth-wrapper {
   position: fixed;
   top: 0;
@@ -752,6 +755,7 @@ body {
   padding: 1rem;
   box-sizing: border-box;
   z-index: 9999;
+  overflow-y: auto; /* Allows scroll on small screens */
 }
 
 .auth-container {
@@ -759,7 +763,7 @@ body {
   width: 100%;
   max-width: 1000px;
   height: 100%;
-  max-height: 620px;
+  max-height: 680px;
   background: white;
   border-radius: 20px;
   overflow: hidden;
@@ -773,7 +777,7 @@ body {
   flex-direction: column;
   justify-content: center;
   background: #ffffff;
-  overflow-y: auto;
+  position: relative;
 }
 
 .auth-right {
@@ -789,18 +793,29 @@ body {
   text-align: center;
 }
 
-/* Form Elements */
-.auth-header { margin-bottom: 1.5rem; }
-.logo {
-  font-weight: 700;
-  font-size: 1.2rem;
-  display: flex;
+/* Back Button */
+.back-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 1.5rem;
-  color: #111;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 2rem;
+  padding: 0;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
-.logo-icon { color: #0055ff; font-size: 1.5rem; }
+
+.back-btn:hover {
+  color: #4D6FE6;
+  transform: translateX(-4px);
+}
+
+/* Form Elements */
+.auth-header { margin-bottom: 2rem; }
 .auth-header h2 { font-size: 1.6rem; color: #111; margin-bottom: 0.5rem; }
 .auth-header p { color: #666; font-size: 0.9rem; }
 
@@ -819,7 +834,6 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   color: #374151;
-  width: 100%;
 }
 .social-btn:hover { background: #f9fafb; border-color: #d1d5db; }
 
@@ -859,7 +873,7 @@ body {
   box-sizing: border-box;
   color: #111;
 }
-.input-group input:focus { border-color: #0055ff; }
+.input-group input:focus { border-color: #4D6FE6; }
 
 .eye-icon {
   position: absolute;
@@ -879,13 +893,13 @@ body {
   font-size: 0.85rem;
 }
 .remember { display: flex; align-items: center; gap: 0.5rem; color: #4b5563; }
-.forgot-link, .link { color: #0055ff; text-decoration: none; font-weight: 500; cursor: pointer; }
+.forgot-link, .link { color: #4D6FE6; text-decoration: none; font-weight: 500; cursor: pointer; }
 .forgot-link:hover, .link:hover { text-decoration: underline; }
 
-.btn-primary {
+.auth-btn {
   width: 100%;
   padding: 0.85rem;
-  background: #0055ff;
+  background: #4D6FE6;
   color: white;
   border: none;
   border-radius: 8px;
@@ -894,11 +908,12 @@ body {
   cursor: pointer;
   transition: background 0.2s;
 }
-.btn-primary:hover { background: #0044cc; }
+.auth-btn:hover { background: #3a5bd0; }
+.auth-btn:disabled { background: #93c5fd; cursor: not-allowed; }
 
 .auth-footer { text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: #6b7280; }
 
-/* Right Side Illustration (Auth) */
+/* Right Side Illustration */
 .illustration-container {
   position: relative;
   width: 250px;
@@ -964,6 +979,33 @@ body {
 .dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); }
 .dots span.active { background: white; width: 20px; border-radius: 4px; }
 
+/* =========================================
+   MOBILE FIX FOR LOGIN & SIGNUP PAGES
+   ========================================= */
+@media (max-width: 850px) {
+  .auth-wrapper {
+    align-items: flex-start !important;
+    padding: 1.5rem 1rem !important;
+  }
+
+  .auth-container {
+    flex-direction: column !important;
+    max-height: none !important;
+    height: auto !important;
+    margin: auto;
+  }
+
+  /* Hide the blue illustration on mobile */
+  .auth-right {
+    display: none !important;
+  }
+
+  .auth-left {
+    padding: 2rem 1.5rem !important;
+    width: 100% !important;
+    flex: none !important;
+  }
+}
 /* =========================================
    RESPONSIVE ADJUSTMENTS
    ========================================= */

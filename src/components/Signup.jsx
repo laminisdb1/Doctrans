@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 
 export default function Signup({ onSignupSuccess, goLogin, goBack }) {
@@ -10,7 +10,7 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
 
   const handleSignup = (e) => {
     e.preventDefault();
-    onSignupSuccess(email);
+    onSignupSuccess(email); // Pass email back to App
   };
 
   return (
@@ -18,13 +18,19 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
       <div className="auth-container">
         
         <div className="auth-left">
+          
+          {/* BACK BUTTON */}
+          <button className="back-btn" onClick={goBack}>
+            <ArrowLeft size={18} /> Back to Home
+          </button>
+
           <div className="auth-header">
-            <div className="brand-logo" onClick={goBack} style={{ marginBottom: '2rem' }}>
+            <div className="brand-logo" onClick={goBack} style={{ marginBottom: '1.5rem', cursor: 'pointer' }}>
               <div className="brand-icon">D</div>
               <span className="brand-name">DocTrans</span>
             </div>
             <h2>Create an Account</h2>
-            <p>Start your journey with doctrans today.</p>
+            <p>Start your journey with DocTrans today.</p>
           </div>
 
           <div className="social-buttons">
@@ -74,7 +80,7 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
               </span>
             </div>
 
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="btn-primary auth-btn">
               Sign Up
             </button>
           </form>

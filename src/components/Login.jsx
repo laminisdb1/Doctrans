@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 
 export default function Login({ onLoginSuccess, goSignup, goBack }) {
@@ -11,10 +11,11 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Mock success:
+    
+    // Mock login delay (Replace with real auth later)
     setTimeout(() => {
       setLoading(false);
-      onLoginSuccess(email);
+      onLoginSuccess(email); // Pass email back to App
     }, 800);
   };
 
@@ -24,8 +25,14 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
         
         {/* Left Side - Form */}
         <div className="auth-left">
+          
+          {/* BACK BUTTON */}
+          <button className="back-btn" onClick={goBack}>
+            <ArrowLeft size={18} /> Back to Home
+          </button>
+
           <div className="auth-header">
-            <div className="brand-logo" onClick={goBack} style={{ marginBottom: '2rem' }}>
+            <div className="brand-logo" onClick={goBack} style={{ marginBottom: '1.5rem', cursor: 'pointer' }}>
               <div className="brand-icon">D</div>
               <span className="brand-name">DocTrans</span>
             </div>
@@ -76,7 +83,7 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
               <a href="#forgot" className="forgot-link">Forgot Password?</a>
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary auth-btn" disabled={loading}>
               {loading ? "Logging in..." : "Log In"}
             </button>
           </form>
