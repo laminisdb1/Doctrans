@@ -125,9 +125,13 @@ export default function AppView({
         setTranslationsUsed(data.translationsUsed);
       }
       
-    } catch (error) {
+    }  catch (error) {
       console.error(error);
-      alert(`Error: ${error.message}`);
+      if (error.message.includes("<!DOCTYPE") || error.message.includes("JSON")) {
+        alert("The server is waking up from sleep. Please wait 30 seconds and try again.");
+      } else {
+        alert(error.message);
+      }
     } finally {
       setTranslating(false);
     }
