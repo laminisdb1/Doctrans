@@ -2,23 +2,55 @@ import React, { useState } from "react";
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { supabase } from '../supabase';
+
 export default function Signup({ onSignupSuccess, goLogin, goBack }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSignup = (e) => {
+  // REAL SUPABASE EMAIL SIGNUP
+  const handleSignup = async (e) => {
     e.preventDefault();
-    onSignupSuccess(email); // Pass email back to App
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            full_name: name, // Saves the name to Supabase user metadata
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      // If email confirmation is turned off in Supabase, they are logged in automatically
+      if (data.session) {
+        onSignupSuccess(data.user.email);
+      } else {
+        alert("Account created! Please check your email to confirm your account before logging in.");
+        goLogin();
+      }
+    } catch (error) {
+      console.error("Signup error:", error.message);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // GOOGLE SIGNUP
   const handleGoogleSignup = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin,
         queryParams: {
-          prompt: 'select_account', // This forces the account picker
+          prompt: 'select_account',
         },
       },
     });
@@ -96,8 +128,8 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
               </span>
             </div>
 
-            <button type="submit" className="btn-primary auth-btn">
-              Sign Up
+            <button type="submit" className="btn-primary auth-btn" disabled={loading}>
+              {loading ? "Creating account..." : "Sign Up"}
             </button>
           </form>
 
