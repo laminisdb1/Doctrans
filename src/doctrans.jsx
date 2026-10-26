@@ -11,14 +11,12 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://doctrans-backen
 
 export default function DocTrans() {
   const [screen, setScreen] = useState("landing");
-  const [checkingAuth, setCheckingAuth] = useState(true); // Prevents flashing login page
+  const [checkingAuth, setCheckingAuth] = useState(true); 
   const [checkout, setCheckout] = useState(null);
   const [plan, setPlan] = useState(null);
   const [locale, setLocale] = useState("en");
   
-  const [email, setEmailState] = useState(() => {
-    try { return localStorage.getItem("doctrans_email") || ""; } catch { return ""; }
-  });
+  const [email, setEmailState] = useState("");
 
   const setEmail = (value) => {
     setEmailState(value);
@@ -26,32 +24,35 @@ export default function DocTrans() {
   };
 
   // ==========================================
-  // 1. SUPABASE AUTH LISTENER (The Fix)
+  // 1. THE FIX: SUPABASE AUTH LISTENER
   // ==========================================
   useEffect(() => {
-    // Check if there is a session when the page loads (after Google redirect)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Supabase Session Check:", session);
+    // Check session on page load
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       if (session) {
+        console.log("✅ Session found on load:", session.user.email);
         setEmail(session.user.email);
         setScreen("app");
       } else {
-        // If no session, check local storage for the last screen
-        try {
-          const savedScreen = localStorage.getItem("doctrans_screen");
-          if (savedScreen) setScreen(savedScreen);
-        } catch {}
+        console.log("❌ No session found on load.");
+        // If no session, default to landing page
+        setScreen("landing");
       }
       setCheckingAuth(false);
-    });
+    };
+    
+    checkAuth();
 
-    // Listen for auth changes (Login / Logout)
+    // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth Event:", event, session);
+      console.log("🔔 Auth Event:", event);
       if (session) {
         setEmail(session.user.email);
         setScreen("app");
       } else if (event === 'SIGNED_OUT') {
+        setEmail("");
         setScreen("landing");
       }
     });
@@ -61,69 +62,21 @@ export default function DocTrans() {
     };
   }, []);
 
-  // Save screen to localStorage whenever it changes
-  useEffect(() => {
-    try { localStorage.setItem("doctrans_screen", screen); } catch {}
-  }, [screen]);
-
   // ==========================================
   // 2. CHECKOUT LOGIC
   // ==========================================
-  const refreshAccount = (forEmail) => {
-    if (!forEmail) return;
-    fetch(`${BACKEND_URL}/api/account?email=${encodeURIComponent(forEmail)}`)
-      .then((res) => res.json())
-      .then((acc) => {
-        if (acc.subscription?.status === "active") {
-          const price = { Pro: 29, Équipe: 79 }[acc.subscription.plan] || null;
-          setPlan({ name: acc.subscription.plan, price });
-        }
-      })
-      .catch(() => {});
-  };
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const result = params.get("checkout");
-    const planName = params.get("plan");
-
-    if (result === "success" && planName) {
-      setScreen("app");
-      let pending = null;
-      try { pending = JSON.parse(localStorage.getItem("doctrans_pending_checkout") || "null"); } catch {}
-      if (pending?.token) {
-        fetch(`${BACKEND_URL}/api/checkout/confirm`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: pending.token }),
-        })
-          .then((res) => res.json())
-          .catch(() => null)
-          .finally(() => {
-            try { localStorage.removeItem("doctrans_pending_checkout"); } catch {}
-            refreshAccount(email);
-          });
-      } else {
-        const price = { Ponctuel: 0, Pro: 29, Équipe: 79 }[planName] || null;
-        setPlan({ name: planName, price });
-      }
-    }
-    if (result) window.history.replaceState({}, "", window.location.pathname);
-  }, [email]);
-
   const openCheckout = (planName, price) => setCheckout({ plan: planName, price });
   
   const handleLogout = async () => { 
-    await supabase.auth.signOut(); // Clear Supabase session
+    await supabase.auth.signOut(); 
     setScreen("landing"); 
     setPlan(null); 
     setEmailState(""); 
-    try { localStorage.removeItem("doctrans_screen"); } catch {}
   };
 
-  // Show a loading screen while checking auth to prevent flashing
+  // Show loading screen while checking auth
   if (checkingAuth) {
-    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>Loading...</div>;
+    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontSize: '1.2rem', color: '#64748b' }}>Checking authentication...</div>;
   }
 
   return (
