@@ -4,38 +4,71 @@ import AppView from "./components/AppView";
 import Checkout from "./components/Checkout";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
+import { supabase } from "./supabase";
 import "./doctrans.css";
-import { supabase } from './supabase';
 
-const BACKEND_URL = "http://localhost:4000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://doctrans-backend.onrender.com";
 
 export default function DocTrans() {
-  // 1. Initialize screen from localStorage, fallback to "landing"
-  const [screen, setScreen] = useState(() => {
-    try {
-      return localStorage.getItem("doctrans_screen") || "landing";
-    } catch {
-      return "landing";
-    }
-  });
-
+  const [screen, setScreen] = useState("landing");
+  const [checkingAuth, setCheckingAuth] = useState(true); // Prevents flashing login page
   const [checkout, setCheckout] = useState(null);
   const [plan, setPlan] = useState(null);
-  const [locale, setLocale] = useState("fr");
+  const [locale, setLocale] = useState("en");
+  
   const [email, setEmailState] = useState(() => {
     try { return localStorage.getItem("doctrans_email") || ""; } catch { return ""; }
   });
-
-  // 2. Save screen to localStorage whenever it changes
-  useEffect(() => {
-    try { localStorage.setItem("doctrans_screen", screen); } catch {}
-  }, [screen]);
 
   const setEmail = (value) => {
     setEmailState(value);
     try { localStorage.setItem("doctrans_email", value); } catch {}
   };
 
+  // ==========================================
+  // 1. SUPABASE AUTH LISTENER (The Fix)
+  // ==========================================
+  useEffect(() => {
+    // Check if there is a session when the page loads (after Google redirect)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Supabase Session Check:", session);
+      if (session) {
+        setEmail(session.user.email);
+        setScreen("app");
+      } else {
+        // If no session, check local storage for the last screen
+        try {
+          const savedScreen = localStorage.getItem("doctrans_screen");
+          if (savedScreen) setScreen(savedScreen);
+        } catch {}
+      }
+      setCheckingAuth(false);
+    });
+
+    // Listen for auth changes (Login / Logout)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth Event:", event, session);
+      if (session) {
+        setEmail(session.user.email);
+        setScreen("app");
+      } else if (event === 'SIGNED_OUT') {
+        setScreen("landing");
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Save screen to localStorage whenever it changes
+  useEffect(() => {
+    try { localStorage.setItem("doctrans_screen", screen); } catch {}
+  }, [screen]);
+
+  // ==========================================
+  // 2. CHECKOUT LOGIC
+  // ==========================================
   const refreshAccount = (forEmail) => {
     if (!forEmail) return;
     fetch(`${BACKEND_URL}/api/account?email=${encodeURIComponent(forEmail)}`)
@@ -76,66 +109,22 @@ export default function DocTrans() {
       }
     }
     if (result) window.history.replaceState({}, "", window.location.pathname);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-  const checkSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      setEmail(session.user.email);
-      setScreen('app');
-    }
-  };
-  checkSession();
-
-  const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-    if (session) {
-      setEmail(session.user.email);
-      setScreen('app');
-    }
-  });
-
-  return () => {
-    authListener.subscription.unsubscribe();
-  };
- }, []);
-
-   useEffect(() => {
-    // 1. Check for an active session when the page loads (after Google redirect)
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setEmail(session.user.email);
-        setScreen("app"); // Instantly send them to the dashboard
-      }
-    };
-    checkSession();
-
-    // 2. Listen for real-time auth changes (login, logout)
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        setEmail(session.user.email);
-        setScreen("app");
-      } else if (event === 'SIGNED_OUT') {
-        setScreen("landing");
-      }
-    });
-
-    // Cleanup listener on unmount
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+  }, [email]);
 
   const openCheckout = (planName, price) => setCheckout({ plan: planName, price });
   
-  const handleLogout = () => { 
+  const handleLogout = async () => { 
+    await supabase.auth.signOut(); // Clear Supabase session
     setScreen("landing"); 
     setPlan(null); 
-    // Clear local storage on logout
+    setEmailState(""); 
     try { localStorage.removeItem("doctrans_screen"); } catch {}
   };
+
+  // Show a loading screen while checking auth to prevent flashing
+  if (checkingAuth) {
+    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>Loading...</div>;
+  }
 
   return (
     <div>
@@ -147,10 +136,10 @@ export default function DocTrans() {
           goSignup={() => setScreen("signup")} 
         />
       )}
-            {screen === "login" && (
+      {screen === "login" && (
         <Login 
           onLoginSuccess={(userEmail) => {
-            setEmail(userEmail); // Save the email!
+            setEmail(userEmail);
             setScreen("app");
           }} 
           goSignup={() => setScreen("signup")} 
@@ -160,7 +149,7 @@ export default function DocTrans() {
       {screen === "signup" && (
         <Signup 
           onSignupSuccess={(userEmail) => {
-            setEmail(userEmail); // Save the email!
+            setEmail(userEmail);
             setScreen("app");
           }} 
           goLogin={() => setScreen("login")} 
