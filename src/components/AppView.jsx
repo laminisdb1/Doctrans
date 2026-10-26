@@ -92,22 +92,24 @@ export default function AppView({
     formData.append("email", email);
     formData.append("preserveLayout", preserveLayout);
 
-    try {
+        try {
       // HARDCODED URL TO BYPASS NETLIFY ENV VARIABLE ISSUES
       const backendUrl = "https://doctrans-backend.onrender.com";
-      
-      // DEBUG ALERT: This will tell us exactly where it is sending the file
-      alert(`Sending to: ${backendUrl}/api/translate`);
 
       const response = await fetch(`${backendUrl}/api/translate`, {
         method: "POST",
         body: formData,
       });
 
-      // Check if the response is actually JSON (not an HTML error page)
+      // Check if the response is actually JSON
       const contentType = response.headers.get("content-type");
+      
       if (!response.ok || !contentType || !contentType.includes("application/json")) {
-        throw new Error("Server error. Please ensure the backend is running or check CORS.");
+        // THIS WILL PRINT THE EXACT HTML ERROR IN THE BROWSER CONSOLE
+        const errorText = await response.text();
+        console.error("🚨 RENDER ERROR PAGE:", errorText);
+        
+        throw new Error(`Server error (${response.status}). Check browser console (F12).`);
       }
 
       const data = await response.json();
@@ -125,13 +127,9 @@ export default function AppView({
         setTranslationsUsed(data.translationsUsed);
       }
       
-    }  catch (error) {
+    } catch (error) {
       console.error(error);
-      if (error.message.includes("<!DOCTYPE") || error.message.includes("JSON")) {
-        alert("The server is waking up from sleep. Please wait 30 seconds and try again.");
-      } else {
-        alert(error.message);
-      }
+      alert(`Error: ${error.message}`);
     } finally {
       setTranslating(false);
     }
