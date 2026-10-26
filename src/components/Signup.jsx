@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-
+import { supabase } from '../supabase';
 export default function Signup({ onSignupSuccess, goLogin, goBack }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -11,6 +11,22 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
   const handleSignup = (e) => {
     e.preventDefault();
     onSignupSuccess(email); // Pass email back to App
+  };
+  const handleGoogleSignup = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: {
+          prompt: 'select_account', // This forces the account picker
+        },
+      },
+    });
+    
+    if (error) {
+      console.error('Google signup error:', error.message);
+      alert('Failed to sign up with Google. Please try again.');
+    }
   };
 
   return (
@@ -34,7 +50,7 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
           </div>
 
           <div className="social-buttons">
-            <button className="social-btn" style={{ width: '100%' }}>
+            <button className="social-btn" style={{ width: '100%' }} onClick={handleGoogleSignup}>
               <FcGoogle size={22} /> Sign up with Google
             </button>
           </div>

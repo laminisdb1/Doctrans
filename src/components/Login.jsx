@@ -21,18 +21,21 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
   };
 
   const handleGoogleLogin = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin, // Redirects back to your app after login
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+      queryParams: {
+        prompt: 'select_account', // This forces the account picker
       },
-    });
-    
-    if (error) {
-      console.error('Google login error:', error.message);
-      alert('Failed to log in with Google. Please try again.');
-    }
-  };
+    },
+  });
+  
+  if (error) {
+    console.error('Google login error:', error.message);
+    alert('Failed to log in with Google. Please try again.');
+  }
+ };
 
   return (
     <div className="auth-wrapper">
