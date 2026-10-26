@@ -37,10 +37,8 @@ export default function AppView({
   // Fetch Account Usage & Documents
   useEffect(() => {
     if (email) {
-      // Use hardcoded URL for now to bypass Netlify env var issues
       const backendUrl = "https://doctrans-backend.onrender.com";
       
-      // Fetch Account Status (Usage)
       fetch(`${backendUrl}/api/account?email=${encodeURIComponent(email)}`)
         .then(res => res.json())
         .then(data => {
@@ -50,7 +48,6 @@ export default function AppView({
         })
         .catch(err => console.error(err));
 
-      // Fetch Documents
       if (activeTab === "documents") {
         fetch(`${backendUrl}/api/documents?email=${encodeURIComponent(email)}`)
           .then(res => res.json())
@@ -92,8 +89,7 @@ export default function AppView({
     formData.append("email", email);
     formData.append("preserveLayout", preserveLayout);
 
-        try {
-      // HARDCODED URL TO BYPASS NETLIFY ENV VARIABLE ISSUES
+    try {
       const backendUrl = "https://doctrans-backend.onrender.com";
 
       const response = await fetch(`${backendUrl}/api/translate`, {
@@ -101,15 +97,9 @@ export default function AppView({
         body: formData,
       });
 
-      // Check if the response is actually JSON
       const contentType = response.headers.get("content-type");
-      
       if (!response.ok || !contentType || !contentType.includes("application/json")) {
-        // THIS WILL PRINT THE EXACT HTML ERROR IN THE BROWSER CONSOLE
-        const errorText = await response.text();
-        console.error("🚨 RENDER ERROR PAGE:", errorText);
-        
-        throw new Error(`Server error (${response.status}). Check browser console (F12).`);
+        throw new Error("Server error. Please ensure the backend is running.");
       }
 
       const data = await response.json();
@@ -129,7 +119,11 @@ export default function AppView({
       
     } catch (error) {
       console.error(error);
-      alert(`Error: ${error.message}`);
+      if (error.message.includes("Server error") || error.message.includes("JSON")) {
+        alert("The translation server is waking up or timed out. Please wait 30 seconds and try again.");
+      } else {
+        alert(error.message);
+      }
     } finally {
       setTranslating(false);
     }
@@ -142,6 +136,11 @@ export default function AppView({
 
   return (
     <div className="eduplex-layout">
+      {/* DARK BACKDROP FOR MOBILE */}
+      {isSidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
       {/* SIDEBAR */}
       <aside className={`eduplex-sidebar ${isSidebarOpen ? "open" : "closed"}`}>
         <div className="sidebar-logo">
@@ -275,12 +274,12 @@ export default function AppView({
             </>
           )}
 
-          {/* NEW TRANSLATION VIEW (WITH PAYWALL) */}
+          {/* NEW TRANSLATION VIEW */}
           {activeTab === "new" && (
             <div className="translation-workspace">
               <div className="translation-card">
                 
-                {/* PAYWALL: If limit reached, replace form with Upgrade UI */}
+                {/* PAYWALL */}
                 {(!plan || plan.name === "Free") && translationsUsed >= MAX_FREE_TRANSLATIONS ? (
                   <div className="translation-success-state">
                     <div className="success-icon-wrapper" style={{ background: '#fee2e2' }}>
@@ -400,23 +399,159 @@ export default function AppView({
             </div>
           )}
 
-          {/* BILLING VIEW (Simplified for now) */}
+          {/* BILLING VIEW */}
           {activeTab === "billing" && (
-            <div className="empty-view" style={{ gridColumn: '1 / -1' }}>
-              <CreditCard size={48} />
-              <h2>Billing</h2>
-              <p>You are on the {plan ? plan.name : "Free"} plan.</p>
-              <button className="btn-primary" onClick={() => onOpenCheckout("Pro", 29)}>Upgrade</button>
+            <div className="billing-container">
+              <div className="billing-top-row">
+                <div className="current-plan-card">
+                  <div className="plan-header-row">
+                    <div className="plan-title"><h3>Current Plan</h3><span className={`plan-pill ${plan ? 'pro' : 'free'}`}>{plan ? plan.name : "Free Plan"}</span></div>
+                    <CreditCard className="plan-icon-large" />
+                  </div>
+                  <div className="usage-section">
+                    <div className="usage-text"><span>Pages used this month</span><strong>{plan ? "Unlimited" : "0 / 5"}</strong></div>
+                    <div className="usage-bar-bg"><div className="usage-bar-fill" style={{ width: plan ? "10%" : "0%" }}></div></div>
+                  </div>
+                  <div className="billing-info-row">
+                    <div className="info-item"><span className="info-label">Next Billing Date</span><span className="info-value">{plan ? "Nov 22, 2026" : "N/A"}</span></div>
+                    <div className="info-item"><span className="info-label">Amount</span><span className="info-value">{plan ? `${plan.price}€ / mo` : "0€"}</span></div>
+                  </div>
+                </div>
+                <div className="payment-method-card">
+                  <h3>Payment Method</h3>
+                  <div className="empty-payment">
+                    <div className="card-icon-mock"></div>
+                    <p>No payment method added yet.</p>
+                    <button className="btn-outline-sm">Add Card</button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="upgrade-section">
+                <div className="upgrade-header"><h3>Available Plans</h3><p>Choose the plan that fits your translation needs.</p></div>
+                <div className="upgrade-cards-grid">
+                  <div className="upgrade-card">
+                    <div className="card-top"><h4>Ponctuel</h4><p className="upgrade-desc">For occasional users.</p><div className="upgrade-price">0€<span>/mo</span></div></div>
+                    <ul className="upgrade-features">
+                      <li><Check size={18} className="check-icon" /> 5 pages per month</li>
+                      <li><Check size={18} className="check-icon" /> Standard translation</li>
+                    </ul>
+                    <button className="btn-outline w-full" disabled>Current Plan</button>
+                  </div>
+                  <div className="upgrade-card popular">
+                    <div className="popular-tag">MOST POPULAR</div>
+                    <div className="card-top"><h4>Pro</h4><p className="upgrade-desc">For professionals.</p><div className="upgrade-price">29€<span>/mo</span></div></div>
+                    <ul className="upgrade-features">
+                      <li><Check size={18} className="check-icon" /> Unlimited pages</li>
+                      <li><Check size={18} className="check-icon" /> Layout preservation</li>
+                      <li><Check size={18} className="check-icon" /> Priority support</li>
+                    </ul>
+                    <button className="btn-primary w-full" onClick={() => onOpenCheckout("Pro", 29)}>Upgrade to Pro</button>
+                  </div>
+                  <div className="upgrade-card">
+                    <div className="card-top"><h4>Équipe</h4><p className="upgrade-desc">For teams and agencies.</p><div className="upgrade-price">79€<span>/mo</span></div></div>
+                    <ul className="upgrade-features">
+                      <li><Check size={18} className="check-icon" /> Everything in Pro</li>
+                      <li><Check size={18} className="check-icon" /> 5 team members</li>
+                      <li><Check size={18} className="check-icon" /> Admin dashboard</li>
+                    </ul>
+                    <button className="btn-outline w-full" onClick={() => onOpenCheckout("Équipe", 79)}>Upgrade to Équipe</button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* SETTINGS VIEW (Simplified for now) */}
+          {/* =========================================
+              SETTINGS VIEW (FULL RESTORED)
+          ========================================= */}
           {activeTab === "settings" && (
-             <div className="empty-view" style={{ gridColumn: '1 / -1' }}>
-               <Settings size={48} />
-               <h2>Settings</h2>
-               <p>Manage your account details.</p>
-             </div>
+            <div className="settings-container">
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <div className="settings-icon-wrapper bg-blue"><Sliders size={20} /></div>
+                  <div className="settings-header-text">
+                    <h3>Translation Preferences</h3>
+                    <p>Customize how DocTrans handles your documents.</p>
+                  </div>
+                </div>
+                <div className="settings-card-body">
+                  <div className="row-group">
+                    <div className="row-text">
+                      <label>Default Target Language</label>
+                      <p>The language your documents translate to by default.</p>
+                    </div>
+                    <select className="settings-select" value={defaultLang} onChange={(e) => setDefaultLang(e.target.value)}>
+                      <option>French (FR)</option><option>English (EN)</option><option>Spanish (ES)</option>
+                    </select>
+                  </div>
+                  <div className="row-group">
+                    <div className="row-text">
+                      <label>Preserve Layout by Default</label>
+                      <p>Keep tables, fonts, and images intact automatically.</p>
+                    </div>
+                    <label className="toggle-switch">
+                      <input type="checkbox" checked={preserveLayout} onChange={(e) => setPreserveLayout(e.target.checked)} />
+                      <span className="slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <div className="settings-icon-wrapper bg-green"><Bell size={20} /></div>
+                  <div className="settings-header-text">
+                    <h3>Email Notifications</h3>
+                    <p>Choose what updates you want to receive.</p>
+                  </div>
+                </div>
+                <div className="settings-card-body">
+                  <div className="row-group">
+                    <div className="row-text">
+                      <label>Translation Completed</label>
+                      <p>Get an email when your document is ready to download.</p>
+                    </div>
+                    <label className="toggle-switch">
+                      <input type="checkbox" checked={emailNotifs} onChange={(e) => setEmailNotifs(e.target.checked)} />
+                      <span className="slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <div className="settings-icon-wrapper bg-purple"><User size={20} /></div>
+                  <div className="settings-header-text">
+                    <h3>Profile Information</h3>
+                    <p>Update your account's profile information and email address.</p>
+                  </div>
+                </div>
+                <div className="settings-card-body">
+                  <div className="form-group">
+                    <label>Email Address</label>
+                    <input type="email" value={email || ""} disabled className="settings-input disabled" />
+                    <p className="input-hint">Your email is used for billing and login.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-card danger-zone">
+                <div className="settings-card-header">
+                  <div className="settings-icon-wrapper bg-red"><AlertTriangle size={20} /></div>
+                  <div className="settings-header-text">
+                    <h3>Danger Zone</h3>
+                    <p>Permanently delete your account and all data.</p>
+                  </div>
+                </div>
+                <div className="settings-card-body">
+                  <button className="btn-danger">
+                    <Trash2 size={16} /> Delete Account
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
         </div>
