@@ -16,16 +16,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve the uploads folder so files can be downloaded
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Ensure the 'uploads' folder exists
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-// Configure Multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "uploads/");
@@ -38,13 +35,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50 MB limit
+  limits: { fileSize: 50 * 1024 * 1024 }
 });
 
 // Initialize Supabase
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-// Initialize DeepL (with 60-second timeout to prevent premature fails)
+// Initialize DeepL
 const translator = new deepl.Translator(process.env.DEEPL_API_KEY, {
   minTimeout: 60000, 
 });
@@ -62,15 +59,15 @@ app.post("/api/translate", upload.single("file"), async (req, res) => {
     if (!file) return res.status(400).json({ error: "No file uploaded." });
     if (!email) return res.status(400).json({ error: "Email required." });
 
-    // Fetch User from Supabase
+    // ⚠️ CHANGED "users" TO "profiles" HERE
     let { data: user, error } = await supabase
-      .from("profliles")
+      .from("profiles") 
       .select("*")
       .eq("email", email)
       .single();
     
-    // If user doesn't exist, create them
     if (error && error.code === "PGRST116") {
+      // ⚠️ CHANGED "users" TO "profiles" HERE
       const { data: newUser } = await supabase
         .from("profiles")
         .insert([{ email, plan: "Free", translations_used: 0 }])
@@ -79,16 +76,13 @@ app.post("/api/translate", upload.single("file"), async (req, res) => {
       user = newUser;
     }
 
-    // Ensure translations_used is a number
     const currentUsage = user.translations_used || 0;
 
-    // Block if Free Limit Reached
     if (user.plan === "Free" && currentUsage >= MAX_FREE_TRANSLATIONS) {
       try { fs.unlinkSync(file.path); } catch (e) {}
       return res.status(403).json({ error: "FREE_LIMIT_REACHED" });
     }
 
-    // Format languages for DeepL
     const getLangCode = (str) => {
       if (!str || str === "Auto-Detect") return null;
       if (str.includes("French")) return "fr";
@@ -100,7 +94,6 @@ app.post("/api/translate", upload.single("file"), async (req, res) => {
     const translatedFilename = `translated-${Date.now()}-${file.originalname}`;
     const outputPath = path.join(__dirname, "uploads", translatedFilename);
 
-    // Translate with DeepL
     await translator.translateDocument(
       file.path, 
       outputPath, 
@@ -108,17 +101,15 @@ app.post("/api/translate", upload.single("file"), async (req, res) => {
       getLangCode(targetLang)
     );
 
-    // Delete the original file
     try { fs.unlinkSync(file.path); } catch (e) {}
 
-    // Increment Usage in Supabase
+    // ⚠️ CHANGED "users" TO "profiles" HERE
     const newUsageCount = currentUsage + 1;
     await supabase
       .from("profiles")
       .update({ translations_used: newUsageCount })
       .eq("email", email);
 
-    // Save Document Record to Supabase
     const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${translatedFilename}`;
     const newDocument = {
       email: email, 
@@ -129,8 +120,9 @@ app.post("/api/translate", upload.single("file"), async (req, res) => {
       url: fileUrl
     };
     
+    // Make sure your documents table is actually named "documents" in Supabase!
     const { data: savedDoc } = await supabase
-      .from("documents")
+      .from("documents") 
       .insert([newDocument])
       .select()
       .single();
@@ -143,7 +135,6 @@ app.post("/api/translate", upload.single("file"), async (req, res) => {
 
   } catch (error) {
     console.error("Translation Error:", error);
-    // Cleanup file if an error occurs during translation
     if (req.file && fs.existsSync(req.file.path)) {
       try { fs.unlinkSync(req.file.path); } catch (e) {}
     }
@@ -158,6 +149,7 @@ app.get("/api/account", async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: "Email required" });
 
+  // ⚠️ CHANGED "users" TO "profiles" HERE
   const { data: user } = await supabase
     .from("profiles")
     .select("*")
@@ -186,6 +178,7 @@ app.get("/api/documents", async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: "Email required" });
 
+  // Make sure your documents table is named "documents" in Supabase
   const { data: docs } = await supabase
     .from("documents")
     .select("*")
@@ -195,9 +188,6 @@ app.get("/api/documents", async (req, res) => {
   res.status(200).json(docs || []);
 });
 
-// ==========================================
-// 5. START SERVER
-// ==========================================
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Backend running on port ${PORT}`);
