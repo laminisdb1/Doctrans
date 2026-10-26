@@ -20,6 +20,11 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
     }, 800);
   };
 
+  const getURL = () => {
+  const url = window.location.origin;
+  return url.includes('localhost') ? url : 'https://doc-trans.netlify.app';
+  };
+
   const handleGoogleLogin = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
