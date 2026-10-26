@@ -10,64 +10,44 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // REAL SUPABASE EMAIL SIGNUP
   const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
-        options: {
-          data: {
-            full_name: name, // Saves the name to Supabase user metadata
-          },
-        },
+        options: { data: { full_name: name } },
       });
-
       if (error) throw error;
-
-      // If email confirmation is turned off in Supabase, they are logged in automatically
       if (data.session) {
         onSignupSuccess(data.user.email);
       } else {
-        alert("Account created! Please check your email to confirm your account before logging in.");
+        alert("Account created! Check your email to confirm.");
         goLogin();
       }
     } catch (error) {
-      console.error("Signup error:", error.message);
       alert(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // GOOGLE SIGNUP
   const handleGoogleSignup = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
-        queryParams: {
-          prompt: 'select_account',
-        },
+        redirectTo: 'https://doc-trans.netlify.app', 
+        queryParams: { prompt: 'select_account' },
       },
     });
-    
-    if (error) {
-      console.error('Google signup error:', error.message);
-      alert('Failed to sign up with Google. Please try again.');
-    }
+    if (error) alert('Failed to sign up with Google.');
   };
 
   return (
     <div className="auth-wrapper">
       <div className="auth-container">
-        
         <div className="auth-left">
-          
-          {/* BACK BUTTON */}
           <button className="back-btn" onClick={goBack}>
             <ArrowLeft size={18} /> Back to Home
           </button>
@@ -94,35 +74,15 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
           <form onSubmit={handleSignup} className="auth-form">
             <div className="input-group">
               <User className="input-icon" size={18} />
-              <input 
-                type="text" 
-                placeholder="Full Name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                required 
-              />
+              <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
-
             <div className="input-group">
               <Mail className="input-icon" size={18} />
-              <input 
-                type="email" 
-                placeholder="Email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                required 
-              />
+              <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
-
             <div className="input-group">
               <Lock className="input-icon" size={18} />
-              <input 
-                type={showPassword ? "text" : "password"} 
-                placeholder="Password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                required 
-              />
+              <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               <span className="eye-icon" onClick={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </span>
@@ -142,12 +102,9 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
           <div className="illustration-container">
             <div className="mock-node node-1"><FcGoogle /></div>
             <div className="mock-node node-2"><Mail color="#0055ff" /></div>
-            
             <div className="mock-browser">
               <div className="browser-header">
-                <span className="dot red"></span>
-                <span className="dot yellow"></span>
-                <span className="dot green"></span>
+                <span className="dot red"></span><span className="dot yellow"></span><span className="dot green"></span>
               </div>
               <div className="browser-body">
                 <div className="browser-line w-50"></div>
@@ -163,19 +120,12 @@ export default function Signup({ onSignupSuccess, goLogin, goBack }) {
               </div>
             </div>
           </div>
-          
           <div className="right-text">
             <h3>Connect with every application.</h3>
             <p>Everything you need in an easily customizable dashboard.</p>
           </div>
-          
-          <div className="dots">
-            <span className="active"></span>
-            <span></span>
-            <span></span>
-          </div>
+          <div className="dots"><span className="active"></span><span></span><span></span></div>
         </div>
-
       </div>
     </div>
   );

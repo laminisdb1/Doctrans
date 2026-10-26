@@ -9,47 +9,53 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // REAL SUPABASE EMAIL/PASSWORD LOGIN
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Mock login delay (Replace with real auth later)
-    setTimeout(() => {
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (error) throw error;
+
+      // If successful, pass the email back to the app
+      if (data.user) {
+        onLoginSuccess(data.user.email);
+      }
+    } catch (error) {
+      console.error("Login error:", error.message);
+      alert(error.message);
+    } finally {
       setLoading(false);
-      onLoginSuccess(email); // Pass email back to App
-    }, 800);
+    }
   };
 
-  const getURL = () => {
-  const url = window.location.origin;
-  return url.includes('localhost') ? url : 'https://doc-trans.netlify.app';
-  };
-
+  // GOOGLE LOGIN
   const handleGoogleLogin = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin,
-      queryParams: {
-        prompt: 'select_account', // This forces the account picker
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://doc-trans.netlify.app', 
+        queryParams: {
+          prompt: 'select_account',
+        },
       },
-    },
-  });
-  
-  if (error) {
-    console.error('Google login error:', error.message);
-    alert('Failed to log in with Google. Please try again.');
-  }
- };
+    });
+    
+    if (error) {
+      console.error('Google login error:', error.message);
+      alert('Failed to log in with Google. Please try again.');
+    }
+  };
 
   return (
     <div className="auth-wrapper">
       <div className="auth-container">
-        
-        {/* Left Side - Form */}
         <div className="auth-left">
-          
-          {/* BACK BUTTON */}
           <button className="back-btn" onClick={goBack}>
             <ArrowLeft size={18} /> Back to Home
           </button>
@@ -64,12 +70,7 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
           </div>
 
           <div className="social-buttons">
-            {/* FIXED: onClick is now correctly placed on the button */}
-            <button 
-              className="social-btn" 
-              style={{ width: '100%' }} 
-              onClick={handleGoogleLogin}
-            >
+            <button className="social-btn" style={{ width: '100%' }} onClick={handleGoogleLogin}>
               <FcGoogle size={22} /> Continue with Google
             </button>
           </div>
@@ -121,7 +122,6 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
           </p>
         </div>
 
-        {/* Right Side - Illustration */}
         <div className="auth-right">
           <div className="illustration-container">
             <div className="mock-node node-1"><FcGoogle /></div>
