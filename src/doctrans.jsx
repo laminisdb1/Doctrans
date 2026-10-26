@@ -101,6 +101,33 @@ export default function DocTrans() {
   };
  }, []);
 
+   useEffect(() => {
+    // 1. Check for an active session when the page loads (after Google redirect)
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setEmail(session.user.email);
+        setScreen("app"); // Instantly send them to the dashboard
+      }
+    };
+    checkSession();
+
+    // 2. Listen for real-time auth changes (login, logout)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setEmail(session.user.email);
+        setScreen("app");
+      } else if (event === 'SIGNED_OUT') {
+        setScreen("landing");
+      }
+    });
+
+    // Cleanup listener on unmount
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
   const openCheckout = (planName, price) => setCheckout({ plan: planName, price });
   
   const handleLogout = () => { 
