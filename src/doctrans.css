@@ -2866,3 +2866,55 @@ body, html, #root {
     min-width: 350px; /* Prevents bars from squishing together */
   }
 }
+
+/* =========================================
+   MOBILE FIXES FOR BILLING PAGE
+   ========================================= */
+@media (max-width: 900px) {
+  /* 1. Force the Top Row (Current Plan & Payment) to stack */
+  .billing-top-row {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* 2. Force the Pricing Cards to stack vertically */
+  .upgrade-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  /* 3. Fix padding so cards don't touch the screen edges */
+  .billing-container {
+    padding: 1rem !important;
+  }
+
+  .upgrade-section {
+    padding: 1.5rem !important;
+  }
+
+  /* 4. Fix the "Most Popular" badge so it doesn't overlap text */
+  .popular-tag {
+    top: -12px !important;
+    font-size: 0.65rem !important;
+    padding: 4px 10px !important;
+  }
+
+  /* 5. Remove any weird dots/bullets */
+  .upgrade-features {
+    list-style: none !important;
+    padding-left: 0 !important;
+  }
+  
+  .upgrade-features li {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  /* 6. Make buttons full width on mobile */
+  .upgrade-card .btn-primary,
+  .upgrade-card .btn-outline {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
