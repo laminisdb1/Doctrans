@@ -5,6 +5,7 @@ import Checkout from "./components/Checkout";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import "./doctrans.css";
+import { supabase } from './supabase';
 
 const BACKEND_URL = "http://localhost:4000";
 
@@ -77,6 +78,28 @@ export default function DocTrans() {
     if (result) window.history.replaceState({}, "", window.location.pathname);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      setEmail(session.user.email);
+      setScreen('app');
+    }
+  };
+  checkSession();
+
+  const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    if (session) {
+      setEmail(session.user.email);
+      setScreen('app');
+    }
+  });
+
+  return () => {
+    authListener.subscription.unsubscribe();
+  };
+ }, []);
 
   const openCheckout = (planName, price) => setCheckout({ plan: planName, price });
   

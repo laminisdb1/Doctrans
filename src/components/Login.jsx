@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
+import { supabase } from '../supabase';
 
 export default function Login({ onLoginSuccess, goSignup, goBack }) {
   const [email, setEmail] = useState("");
@@ -17,6 +18,19 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
       setLoading(false);
       onLoginSuccess(email); // Pass email back to App
     }, 800);
+  };
+
+  const handleGoogleLogin = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    },
+  });
+  if (error) {
+    console.error('Google login error:', error.message);
+    alert('Failed to log in with Google. Please try again.');
+  }
   };
 
   return (
@@ -42,7 +56,7 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
 
           <div className="social-buttons">
             <button className="social-btn" style={{ width: '100%' }}>
-              <FcGoogle size={22} /> Continue with Google
+              <FcGoogle size={22} /> Continue with Google onClick={handleGoogleLogin}
             </button>
           </div>
 
