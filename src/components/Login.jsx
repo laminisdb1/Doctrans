@@ -21,16 +21,17 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
   };
 
   const handleGoogleLogin = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin,
-    },
-  });
-  if (error) {
-    console.error('Google login error:', error.message);
-    alert('Failed to log in with Google. Please try again.');
-  }
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin, // Redirects back to your app after login
+      },
+    });
+    
+    if (error) {
+      console.error('Google login error:', error.message);
+      alert('Failed to log in with Google. Please try again.');
+    }
   };
 
   return (
@@ -55,8 +56,13 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
           </div>
 
           <div className="social-buttons">
-            <button className="social-btn" style={{ width: '100%' }}>
-              <FcGoogle size={22} /> Continue with Google onClick={handleGoogleLogin}
+            {/* FIXED: onClick is now correctly placed on the button */}
+            <button 
+              className="social-btn" 
+              style={{ width: '100%' }} 
+              onClick={handleGoogleLogin}
+            >
+              <FcGoogle size={22} /> Continue with Google
             </button>
           </div>
 
