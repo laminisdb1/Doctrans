@@ -3,29 +3,27 @@ import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { supabase } from '../supabase';
 
-export default function Login({ onLoginSuccess, goSignup, goBack }) {
+export default function Login({ goSignup, goBack }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // REAL SUPABASE EMAIL/PASSWORD LOGIN
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
       });
 
       if (error) throw error;
+      
+      // We DO NOT need to change the screen here. 
+      // The Auth Listener in doctrans.jsx will automatically catch this and load the Dashboard.
 
-      // If successful, pass the email back to the app
-      if (data.user) {
-        onLoginSuccess(data.user.email);
-      }
     } catch (error) {
       console.error("Login error:", error.message);
       alert(error.message);
@@ -34,15 +32,12 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
     }
   };
 
-  // GOOGLE LOGIN
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: 'https://doc-trans.netlify.app', 
-        queryParams: {
-          prompt: 'select_account',
-        },
+        queryParams: { prompt: 'select_account' },
       },
     });
     
@@ -82,33 +77,18 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
           <form onSubmit={handleLogin} className="auth-form">
             <div className="input-group">
               <Mail className="input-icon" size={18} />
-              <input 
-                type="email" 
-                placeholder="Email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                required 
-              />
+              <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
-
             <div className="input-group">
               <Lock className="input-icon" size={18} />
-              <input 
-                type={showPassword ? "text" : "password"} 
-                placeholder="Password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                required 
-              />
+              <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               <span className="eye-icon" onClick={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </span>
             </div>
 
             <div className="form-options">
-              <label className="remember">
-                <input type="checkbox" /> Remember me
-              </label>
+              <label className="remember"><input type="checkbox" /> Remember me</label>
               <a href="#forgot" className="forgot-link">Forgot Password?</a>
             </div>
 
@@ -126,12 +106,9 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
           <div className="illustration-container">
             <div className="mock-node node-1"><FcGoogle /></div>
             <div className="mock-node node-2"><Mail color="#0055ff" /></div>
-            
             <div className="mock-browser">
               <div className="browser-header">
-                <span className="dot red"></span>
-                <span className="dot yellow"></span>
-                <span className="dot green"></span>
+                <span className="dot red"></span><span className="dot yellow"></span><span className="dot green"></span>
               </div>
               <div className="browser-body">
                 <div className="browser-line w-50"></div>
@@ -147,19 +124,12 @@ export default function Login({ onLoginSuccess, goSignup, goBack }) {
               </div>
             </div>
           </div>
-          
           <div className="right-text">
             <h3>Connect with every application.</h3>
             <p>Everything you need in an easily customizable dashboard.</p>
           </div>
-          
-          <div className="dots">
-            <span className="active"></span>
-            <span></span>
-            <span></span>
-          </div>
+          <div className="dots"><span className="active"></span><span></span><span></span></div>
         </div>
-
       </div>
     </div>
   );

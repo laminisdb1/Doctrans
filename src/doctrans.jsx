@@ -15,7 +15,6 @@ export default function DocTrans() {
   const [checkout, setCheckout] = useState(null);
   const [plan, setPlan] = useState(null);
   const [locale, setLocale] = useState("en");
-  
   const [email, setEmailState] = useState("");
 
   const setEmail = (value) => {
@@ -24,33 +23,29 @@ export default function DocTrans() {
   };
 
   // ==========================================
-  // 1. THE FIX: SUPABASE AUTH LISTENER
+  // MASTER AUTH LISTENER
   // ==========================================
   useEffect(() => {
-    // Check session on page load
-    const checkAuth = async () => {
+    // 1. Check for a session on page load (Refresh fix)
+    const initializeAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        console.log("✅ Session found on load:", session.user.email);
         setEmail(session.user.email);
-        setScreen("app");
+        setScreen("app"); 
       } else {
-        console.log("❌ No session found on load.");
-        // If no session, default to landing page
         setScreen("landing");
       }
-      setCheckingAuth(false);
+      setCheckingAuth(false); 
     };
     
-    checkAuth();
+    initializeAuth();
 
-    // Listen for auth changes
+    // 2. Listen for auth changes (Instant Login/Logout fix)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("🔔 Auth Event:", event);
       if (session) {
         setEmail(session.user.email);
-        setScreen("app");
+        setScreen("app"); 
       } else if (event === 'SIGNED_OUT') {
         setEmail("");
         setScreen("landing");
@@ -63,8 +58,21 @@ export default function DocTrans() {
   }, []);
 
   // ==========================================
-  // 2. CHECKOUT LOGIC
+  // CHECKOUT & PAYMENT LOGIC
   // ==========================================
+  const refreshAccount = (forEmail) => {
+    if (!forEmail) return;
+    fetch(`${BACKEND_URL}/api/account?email=${encodeURIComponent(forEmail)}`)
+      .then((res) => res.json())
+      .then((acc) => {
+        if (acc.subscription?.status === "active") {
+          const price = { Pro: 29, Équipe: 79 }[acc.subscription.plan] || null;
+          setPlan({ name: acc.subscription.plan, price });
+        }
+      })
+      .catch(() => {});
+  };
+
   const openCheckout = (planName, price) => setCheckout({ plan: planName, price });
   
   const handleLogout = async () => { 
@@ -74,9 +82,18 @@ export default function DocTrans() {
     setEmailState(""); 
   };
 
-  // Show loading screen while checking auth
+  // ==========================================
+  // LOADING SCREEN
+  // ==========================================
   if (checkingAuth) {
-    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontSize: '1.2rem', color: '#64748b' }}>Checking authentication...</div>;
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '40px', height: '40px', border: '4px solid #e2e8f0', borderTop: '4px solid #4D6FE6', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1rem auto' }}></div>
+          <p style={{ color: '#64748b', fontWeight: '600' }}>Loading workspace...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -91,20 +108,12 @@ export default function DocTrans() {
       )}
       {screen === "login" && (
         <Login 
-          onLoginSuccess={(userEmail) => {
-            setEmail(userEmail);
-            setScreen("app");
-          }} 
           goSignup={() => setScreen("signup")} 
           goBack={() => setScreen("landing")}
         />
       )}
       {screen === "signup" && (
         <Signup 
-          onSignupSuccess={(userEmail) => {
-            setEmail(userEmail);
-            setScreen("app");
-          }} 
           goLogin={() => setScreen("login")} 
           goBack={() => setScreen("landing")}
         />
